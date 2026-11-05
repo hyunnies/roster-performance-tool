@@ -1,0 +1,39 @@
+ROSTER PERFORMANCE TOOL — how to start it
+==========================================
+
+1. Install Node.js (one time only)
+   Go to https://nodejs.org, download the "LTS" version and run the installer.
+   Click through it with the default options.
+
+2. Move this folder somewhere you'll keep it
+   For example your Documents folder. Your data is saved inside this folder,
+   so don't delete it.
+
+3. Start the tool
+   Mac:     double-click "Start Roster Tool.command"
+            The first time, macOS may say it can't be opened because it's from
+            an unidentified developer. If so: right-click the file, choose
+            Open, then click Open again. You only need to do this once.
+   Windows: double-click "Start Roster Tool.bat"
+            If Windows shows "Windows protected your PC", click
+            "More info", then "Run anyway".
+
+   A window opens. The very first time it installs what it needs, which takes
+   a minute or two. Then the tool opens in your web browser at
+   http://localhost:3002
+
+4. When you're done
+   Close the window that opened in step 3. Your work is already saved.
+   Next time, just double-click the Start file again.
+
+
+Good to know
+------------
+- Everything stays on your computer: your roster, numbers, events and any
+  contracts you upload. Nobody else sees your copy, and you don't see theirs.
+- Back up your work now and then by copying the "server/data" folder inside
+  this folder somewhere safe.
+- Everything works without any setup: enter numbers on an artist, or use the
+  Import buttons. Only the "Sync stats" button needs API keys. Ask the person
+  who sent you this tool before using it, because each sync costs money. The
+  setup steps are in README.md, section 3.
