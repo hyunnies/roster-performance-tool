@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Not committed on purpose: a lockfile generated on one OS/CPU can make
+# `npm install` skip the right native binary (Rollup/esbuild) on another
+# (a known cross-platform npm bug). Run `npm install` once on your own
+# machine and it generates a correct one locally.
+package-lock.json
+
+# Real roster/metrics data stays local — never commit it.
+server/data/roster.json
+server/data/metrics.json
+server/data/imports.json
+server/data/events.json
+server/data/contracts.json
+server/data/contracts/
+server/data/*.tmp-*
+
+# Editor/OS noise
+.vscode/*
+!.vscode/extensions.json
+
+# Secrets — never commit
+.env
