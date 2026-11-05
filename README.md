@@ -1,186 +1,170 @@
 # Roster Performance Tool
 
-A standalone dashboard for grading every signature and resident
-collaboration on what it actually produced this month — on YouTube, Meta
-and search — relative to that artist's own audience. A 700k channel and a
-20k channel are held to the same standard of effort, not the same absolute
-number. Affiliate sales and press sit alongside the grade; neither is
-scored into it, since affiliate is still a small pilot and press is news,
-not a monthly metric.
+A dashboard for grading each Strandberg artist collaboration on what it produced over the **past 30 days** on Instagram, Facebook, YouTube, Spotify and search. Grades are relative to the artist's own audience, so a 700k channel and a 20k channel are held to the same standard of effort. How much each channel counts depends on the artist's **Type**: Spotify carries a Live Artist, social carries an Influencer. Affiliate sales and press are shown beside the grade, never scored into it.
 
-This was originally the "Current roster performance" page inside a larger
-internal dashboard (the Artist Relations Cockpit, built as a Claude
-artifact). It's been pulled out so it can run entirely on your own machine,
-take real code changes, and outlive any one person's access to that
-dashboard. **It's a local app — there's no GitHub, no account, and no
-server anywhere else involved.** Pushing it to a Git host later is entirely
-optional; nothing here depends on it.
+It also has:
 
-This is a separate app from the [Artist Evaluation Tool](../artist-evaluation-tool)
-(the old "New artist evaluation" page) — the two started life on different
-pages of the same dashboard, grade completely different things, and have no
-need to share a server or a data file.
+- **Artist panel:** profile links, numbers per month, band tabs, a contract upload with an anniversary date, recommended activities and notes.
+- **Artist Involvement tab:** events, and which roster artists take part in each, with a status for every artist.
+- **Sync stats:** fills in an artist's numbers automatically, using your own API keys.
 
-## How it's put together
+It runs entirely on your own computer. Your data and contracts never leave it, and it only accepts connections from that computer.
 
-```
-roster-performance-tool/
-├── client/     Vite + React + TypeScript — the dashboard, tables and import UI
-├── server/     Express + TypeScript — a small API that persists roster,
-│               metrics and import history to server/data/*.json
-└── package.json   npm workspaces root — runs both together
-```
+---
 
-The grading engine and the five CSV importers live entirely in
-`client/src/lib/` (`grading.ts`, `importer.ts`, `csv.ts`) as plain,
-dependency-free TypeScript functions. If you ever want to reuse them
-somewhere else — a CLI, a scheduled report, a different UI — those files
-are the whole thing; nothing else depends on React.
+## 1. Install
 
-## Running it
+You need:
 
-Requires Node 18+. One-time setup, then one command whenever you want to use it:
+- **Node.js 20.12 or newer.** Check with `node -v`. If it's missing or older, install the LTS version from [nodejs.org](https://nodejs.org).
+- **Git**, to download the code. On a Mac, `git --version` offers to install it if it's missing.
+- **Access to this repository.** It's private; ask the owner to add you.
+
+Then, in a terminal:
 
 ```bash
-npm install      # one-time: installs both client and server workspaces
-npm run app       # builds it and starts one local server with everything
+git clone https://github.com/hyunnies/roster-performance-tool.git
+cd roster-performance-tool
+npm install
 ```
 
-(`npm install` generates its own `package-lock.json` the first time you run
-it — that file isn't committed on purpose, since one generated on a
-different machine can make npm skip the correct native build tool for
-*your* OS and CPU.)
+`npm install` is a one-time step. It also creates `package-lock.json` for your machine; that file is deliberately not committed.
 
-Then open **http://localhost:3002** — that's the whole app, UI and data
-together, running as a single local process. No dev tooling, no browser
-build step to think about, nothing else needs to be running. Stop it with
-Ctrl+C whenever you're done; run `npm run app` again next time (it rebuilds
-each time, which is fast — a couple of seconds).
-
-If you're actively changing the code and want instant reload on save
-instead:
+## 2. Run it
 
 ```bash
-npm run dev       # runs the API on :3002 and the Vite dev server on :5180
+npm run app
 ```
 
-Open **http://localhost:5180** for that — the dev server proxies `/api/*`
-requests to the Express server, so both need to stay running, which is what
-`npm run dev` does.
+Open **http://localhost:3002**. Stop the app with Ctrl+C, and run `npm run app` again next time.
 
-## The first time you run it
+The first run creates the roster from a snapshot of the Favro "Artists Roster" board (139 artists). After that, the **Favro** import on the page keeps it up to date.
 
-`server/data/roster.json` doesn't exist yet, so the first `GET /api/state`
-seeds it from a snapshot of the Favro "Artists Roster" board taken when this
-tool was built (`server/src/seed.ts` — 139 collaborations, names/tier/status/
-region only). That seed only ever fires once, against an empty roster file —
-from then on, the **Favro CSV import is the source of truth** for keeping
-the roster current, exactly as it was in the original dashboard. If the
-roster has moved on since this was built, your first Favro import brings it
-up to date; nothing about the seed data blocks that.
+The app works without any keys. You can enter numbers by hand on each artist, or import CSVs. Keys are only needed for **Sync stats**.
+
+---
+
+## 3. Add your tokens (for Sync stats)
+
+Sync uses up to three sources. Set up only the ones you need:
+
+| What it fills in | Needs | Cost |
+|---|---|---|
+| YouTube uploads (videos, Shorts, live) | Nothing, just the artist's YouTube link | Free |
+| Instagram followers, posts, likes + comments | A Meta token (step 3b) | Free |
+| Facebook followers, YouTube subscribers, Spotify monthly listeners | An Anthropic API key (step 3a) | Billed per sync |
+
+Every key goes in one file, `.env`, in the project folder. Create it from the template:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` in any text editor. **`.env` is git-ignored, so it never gets committed or pushed.** Never paste keys into the code, a chat, an issue or a commit.
+
+Restart the app (Ctrl+C, then `npm run app`) after any change to `.env`.
+
+### 3a. Anthropic API key
+
+1. Sign in to the [Anthropic Console](https://console.anthropic.com). Your organisation may already have a workspace for this; ask the person who manages API billing.
+2. Go to **API keys → Create key**, and copy the key (it starts with `sk-ant-`). You only see it once.
+3. Paste it into `.env`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+4. If Sync later says **"API key is not scoped to a workspace"**, your key belongs to the whole organisation. Find the workspace ID under **Settings → Workspaces** (it starts with `wrkspc_`) and add it:
+   ```
+   ANTHROPIC_WORKSPACE_ID=wrkspc_...
+   ```
+
+Each sync is a billed call that searches the web, and the key needs an active card on the account. Check with whoever holds the key before syncing a lot of artists.
+
+### 3b. Meta token (Instagram)
+
+This reads Instagram numbers through Strandberg's own Instagram account, using Meta's Business Discovery API. It only works for artists whose accounts are **creator or business** accounts.
+
+1. Make sure Strandberg's Instagram is a **professional** account, linked to Strandberg's **Facebook Page**.
+2. At [developers.facebook.com](https://developers.facebook.com), create an app of type **Business**. Add the **Instagram** product and choose **API setup with Facebook login**. Note the **App ID** and **App Secret** under **App settings → Basic**.
+3. Open **Tools → Graph API Explorer** and select your app. Generate a **user token** with these permissions:
+   - `instagram_basic`
+   - `instagram_manage_insights`
+   - `pages_read_engagement`
+   - `pages_show_list`
+   - also `business_management`, if the Page is owned through Business Manager
+
+   Log in as someone who has access to Strandberg's Facebook Page.
+4. From the project folder, run this **in your own terminal**:
+   ```bash
+   npm run ig:setup
+   ```
+   Paste the App ID, App Secret and token when it asks. It then:
+   - swaps the token for a 60-day one;
+   - finds Strandberg's Instagram account and tests a real lookup;
+   - writes `META_ACCESS_TOKEN`, `IG_USER_ID` and `META_TOKEN_EXPIRES` into `.env`.
+
+   The App Secret is used once and never saved.
+5. Restart the app.
+
+The token lasts **60 days**. Sync warns you a week before it expires; renew it by running `npm run ig:setup` again. The Meta app can stay in development mode, and it doesn't need Meta's app review.
+
+If setup says **"No Instagram professional account is linked"**, the token can't see the Page. Regenerate it while logged in as a Page admin, and include `business_management`.
+
+### Check it worked
+
+Open an artist, add their profile links, and press **Sync stats**. The message under the button lists what was found and what wasn't, with the reason. Facebook post counts can't be read without a login, so they stay manual.
+
+---
+
+## Where your data lives
+
+Everything stays in `server/data/` on your computer:
+
+- `roster.json`, `metrics.json`, `imports.json`, `events.json`, plus `contracts.json` listing the uploaded files;
+- `server/data/contracts/` for the contract PDFs.
+
+All of it is git-ignored, so pulling or pushing code never touches it. Back the folder up now and then by copying it somewhere safe.
+
+The app only accepts connections from your own computer, because it holds contracts. To open it to a trusted network on purpose, start it with `HOST=0.0.0.0 npm run app`.
+
+## Updating
+
+```bash
+git pull
+npm install
+npm run app
+```
+
+Your `.env` and `server/data/` are kept.
 
 ## Importing data
 
-The five import buttons each take a pasted CSV and are tolerant of real
-exports — quoted fields, commas/semicolons/tabs as delimiters, and a locale-
-tolerant number parser (`1.234,56` and `1,234.56` both work):
+The import buttons on the roster page take a pasted CSV:
 
-- **Favro roster** — updates the roster itself (tier, status, region, last
-  check-in). Not tied to a month.
-- **YouTube** — subscribers, videos/views/qualified-views for the month.
-- **Search Console** — pastes the whole query table; artist names are
-  matched out of the queries automatically (full name first, then a
-  distinctive single name, guarded against short or common words).
-- **Meta** — followers, reach, engagement from Business Suite.
-- **Press & media** — one row per piece of coverage; artist names are
-  matched out of the headline the same way as Search Console. Never scored,
-  just shown.
-- **AdTraction** — affiliate clicks/conversions/commission. Graded on
-  number of transactions, not kronor — five small sales say more about a
-  working collaboration than one large one, and it's a pilot program with a
-  handful of artists, so it's shown separately and never folded into the
-  composite score.
+- **Favro roster:** updates tier, status, region and last check-in.
+- **Instagram:** followers, posts and engagement.
+- **Meta (Facebook):** followers, posts and engagement.
+- **YouTube:** subscribers, uploads, views and qualified views.
+- **Spotify:** monthly listeners, graded on the trend since last month.
+- **Search Console:** artist names are matched out of the queries automatically.
+- **AdTraction:** clicks, sales and commission.
+- **Press & media:** shown, never scored.
 
-Column names are matched flexibly (`subscribers` or `subscriber_count`,
-`reach` or `accounts_reached`, and so on) — see `client/src/lib/importer.ts`
-(`SOURCES`) for the exact list each source recognizes.
+Each source accepts several column names (`subscribers` or `subscriber_count`, and so on); `client/src/lib/importer.ts` lists them all. Numbers in either `1.234,56` or `1,234.56` style work.
 
-## Sync stats
+## For developers
 
-Each artist's **Sync stats** button fills in the past 30 days from three
-sources, all running at once:
+```
+client/   Vite + React + TypeScript (the page)
+server/   Express + TypeScript (local API, Sync, saves to server/data/)
+```
 
-- **YouTube uploads** — counted straight from the channel's public pages
-  (videos, Shorts and live streams). Free; needs the artist's YouTube link.
-- **Instagram followers, posts, likes + comments** — exact, via Meta's
-  Business Discovery API, read through Strandberg's own Instagram
-  professional account. Free; needs the artist's Instagram link and the
-  one-time setup below. Only works for creator/business accounts.
-- **Everything else** (Facebook followers, YouTube subscribers, Spotify
-  monthly listeners) — looked up by Claude with web search. Billed to the
-  Anthropic key; put `ANTHROPIC_API_KEY` (and `ANTHROPIC_WORKSPACE_ID` for
-  org-wide keys) in `.env` — see `.env.example`.
+- `npm run dev` gives live reload while you change code. The API runs on :3002 and the page on **http://localhost:5180**.
+- The grading engine and importers are plain TypeScript in `client/src/lib/` (`grading.ts`, `importer.ts`, `csv.ts`).
+- Sync lives in `server/src/`: `sync.ts` for Claude, `youtube.ts`, `instagram.ts` and `ig-setup.ts`.
+- If a newer `npm` elsewhere on your PATH misbehaves with workspaces, the scripts already call `npm --prefix` to avoid it.
 
-Facebook post counts can't be read without a login, so they stay manual.
-
-### One-time Instagram setup
-
-1. Make sure Strandberg's Instagram is a **professional** account linked to
-   Strandberg's **Facebook Page**.
-2. At [developers.facebook.com](https://developers.facebook.com), create an
-   app (type **Business**) and add the **Instagram** product, choosing
-   "API setup with Facebook login". Note the **App ID** and **App Secret**
-   (App settings → Basic).
-3. Open **Tools → Graph API Explorer**, pick the app, and generate a user
-   token with: `instagram_basic`, `instagram_manage_insights`,
-   `pages_read_engagement`, `pages_show_list` (plus `business_management`
-   if the Page is owned through Business Manager). Log in as someone with
-   access to Strandberg's Page.
-4. From the repo root run `npm run ig:setup` and paste the App ID, App
-   Secret and token. It swaps in a 60-day token, finds the Instagram
-   account, tests a real lookup and writes the result to `.env` (the App
-   Secret is never saved).
-5. Restart the app. Sync warns a week before the token expires — just run
-   `npm run ig:setup` again.
-
-The app only needs to stay in Meta's development mode, since the token belongs
-to an admin of the app; no Meta app review is needed for this.
-
-## Where the data lives
-
-Roster, metrics, import history and Artist Involvement events are saved to
-`server/data/roster.json`, `metrics.json`, `imports.json` and `events.json` —
-plain JSON, written atomically (write-to-temp-then-rename) so a crash
-mid-save can't corrupt them. Contract PDFs uploaded on an artist go in
-`server/data/contracts/` (named by an internal id), listed in
-`contracts.json`. All of it is git-ignored on purpose — nobody wants real
-roster data or contracts committed to a repo, especially a public one. Back
-up the whole `server/data/` folder the boring way: copy it somewhere safe now
-and then.
-
-The app only accepts connections from this computer, since it holds
-contracts. To share it on a trusted network on purpose, start it with
-`HOST=0.0.0.0 npm run app`.
-
-If you need this to serve more than one person, or run on a shared machine,
-`server/src/index.ts` is a good, small place to start — swap the JSON files
-for SQLite (`better-sqlite3` is a drop-in, no separate database server to
-run) once single-file JSON starts to feel thin. The rest of the app doesn't
-care how `server/src/index.ts` stores things, as long as the same endpoints
-keep working (`GET /api/state`, `PUT /api/roster`, `PUT
-/api/metrics/:month`, `PUT /api/imports`, `PUT /api/events`, and the
-`/api/contracts` endpoints).
-
-## What's deliberately not here
-
-The original dashboard page had no Claude-specific features on this one (no
-AI-powered lookup button, unlike the evaluation tool's page) — the whole
-grading and import pipeline was already plain JavaScript, so nothing had to
-be left out here. Everything you see is a straight, verbatim port of the
-original logic.
+The team's shared **Artist Relations Cockpit** on claude.ai has the same roster tab without Sync. It's a separate page; this repository doesn't update it.
 
 ## License
 
-No license file is included yet — this repo defaults to "all rights
-reserved" until you add one. Add a `LICENSE` file if and when you decide how
-you want this shared.
+No license yet, so all rights are reserved.
